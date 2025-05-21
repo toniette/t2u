@@ -1,0 +1,11 @@
+{
+  "name": "marcianos/estudos",
+  "description": "Estudos de outro mundo",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "Marcianos\\Estudos\\": "src/"
+    }
+  },
+  "require": {}
+}
