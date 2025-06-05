@@ -1,6 +1,6 @@
 <?php
 
-namespace Marcianos\Estudos;
+namespace Marcianos\Estudos\Entities;
 
 class Module
 {

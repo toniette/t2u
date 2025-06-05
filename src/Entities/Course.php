@@ -1,6 +1,8 @@
 <?php
 
-namespace Marcianos\Estudos;
+namespace Marcianos\Estudos\Entities;
+
+use Marcianos\Estudos\Collections\ModuleCollection;
 
 class Course
 {
@@ -9,8 +11,7 @@ class Course
         private readonly string $description,
         private readonly string $category,
         private Instructor $instructor,
-    )
-    {
-    }
+        private ModuleCollection $modules,
+    ) {}
 
 }

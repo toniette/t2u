@@ -1,6 +1,6 @@
 <?php
 
-namespace Marcianos\Estudos;
+namespace Marcianos\Estudos\Entities;
 
 abstract class Lesson
 {
@@ -8,7 +8,5 @@ abstract class Lesson
         private readonly string $name,
         private readonly string $description,
         private readonly int $duration,
-    )
-    {
-    }
+    ) {}
 }
