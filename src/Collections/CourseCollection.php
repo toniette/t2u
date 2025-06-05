@@ -2,7 +2,7 @@
 
 namespace Marcianos\Estudos\Collections;
 
-class ModuleCollection extends Collection
+class CourseCollection extends Collection
 {
     //
 }

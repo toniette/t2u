@@ -2,13 +2,14 @@
 
 namespace Marcianos\Estudos\Entities;
 
-class Module
+use Marcianos\Estudos\Collections\Collection;
+
+class Module extends Collection
 {
-    public function __construct(
-        private readonly string $name,
-        private readonly string $description,
-        private readonly string $category,
-    )
+    public function __construct()
     {
+        $this->type = Lesson::class;
+        parent::__construct();
     }
+
 }

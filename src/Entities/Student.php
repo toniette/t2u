@@ -2,21 +2,29 @@
 
 namespace Marcianos\Estudos\Entities;
 
-use Marcianos\Estudos\Collections\EnrollmentCollection;
+use Exception;
+use Marcianos\Estudos\Collections\CourseCollection;
 
 class Student extends User
 {
-    private EnrollmentCollection $enrollments;
+    private CourseCollection $courses;
 
     public function __construct(string $name, string $document, string $email, string $password)
     {
         parent::__construct($name, $document, $email, $password);
-        $this->enrollments = new EnrollmentCollection();
+        $this->courses = new CourseCollection();
     }
 
-    public function enroll(Course $course)
+    /**
+     * @throws Exception
+     */
+    public function enroll(Course $course): Enrollment
     {
-        $enrollment = new Enrollment($this, $course);
-        $this->enrollments->add($enrollment);
+        if ($this->courses->contains($course)) {
+            throw new Exception("You are already enrolled in this course.");
+        }
+
+        $this->courses->attach($course);
+        return new Enrollment($this, $course);
     }
 }
