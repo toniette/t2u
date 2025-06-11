@@ -166,8 +166,7 @@ class TypeExpressionParser
 
     private function parsePrimary(): array
     {
-        $token = $this->peek();
-        if ($token === '(') {
+        if ($this->peek() === '(') {
             $this->consume();
             $expression = $this->parseUnion();
             if ($this->peek() !== ')') {
@@ -175,27 +174,34 @@ class TypeExpressionParser
             }
             $this->consume();
             return $expression;
-        } elseif ($token !== null) {
-            $baseType = $this->consume();
-
-            if ($this->peek() === '<') {
-                $this->consume();
-                $genericArgs = [];
-                while ($this->peek() !== '>') {
-                    if ($this->peek() === null) {
-                        throw new InvalidTypeExpressionException("Unclosed generic type: Expected '>' ");
-                    }
-                    $genericArgs[] = $this->parseUnion();
-                    if ($this->peek() === ',') {
-                        $this->consume();
-                    }
-                }
-                $this->consume();
-                return ['generic', $baseType, $genericArgs];
-            }
-            return ['type', $baseType];
         }
-        throw new InvalidTypeExpressionException("Unexpected end of type expression or invalid token: $token");
+        return $this->parseType();
+    }
+
+    private function parseType(): array
+    {
+        if ($this->peek() === '?') {
+            $this->consume();
+            $type = $this->parseType();
+            return ['union', $type, ['type', 'null']];
+        }
+        $token = $this->consume();
+        if ($this->peek() === '<') {
+            $this->consume();
+            $genericArgs = [];
+            while ($this->peek() !== '>') {
+                if ($this->peek() === null) {
+                    throw new InvalidTypeExpressionException("Unclosed generic type: Expected '>'");
+                }
+                $genericArgs[] = $this->parseUnion();
+                if ($this->peek() === ',') {
+                    $this->consume();
+                }
+            }
+            $this->consume();
+            return ['generic', $token, $genericArgs];
+        }
+        return ['type', $token];
     }
 
     private function peek(): ?string
@@ -219,9 +225,18 @@ class VariableManager
     private array $variables = [];
     private TypeSystemInterface $typeSystem;
 
-    public function __construct(?TypeSystemInterface $typeSystem = null)
+    private function __construct()
     {
-        $this->typeSystem = $typeSystem ?? new TypeSystem();
+        $this->typeSystem = new TypeSystem();
+    }
+
+    public static function getInstance(): ?VariableManager
+    {
+        static $instance = null;
+        if ($instance === null) {
+            $instance = new self();
+        }
+        return $instance;
     }
 
     public function set(string $name, mixed $value, ?string $type = null): mixed
@@ -264,19 +279,8 @@ class VariableManager
         if ($type === null) {
             return;
         }
-
-        $isNullable = str_starts_with($type, "?");
-        $actualType = $isNullable ? substr($type, 1) : $type;
-
-        if ($isNullable && $value === null) {
-            return;
-        }
-        if ($value === null) {
-            throw new TypeMismatchException("Value cannot be null for non-nullable type '$type'.");
-        }
-
         try {
-            $ast = $this->typeSystem->parse($actualType);
+            $ast = $this->typeSystem->parse($type);
             if (!$this->typeSystem->evaluate($value, $ast)) {
                 throw new TypeMismatchException("Value type does not match the specified type '$type'.");
             }
@@ -291,4 +295,87 @@ class VariableManager
             throw new VariableNotFoundException("Variable with name '$name' does not exist.");
         }
     }
+
+    public function get(string $name): mixed
+    {
+        $this->ensureVariableExists($name);
+        return $this->variables[$name]->value;
+    }
 }
+
+function _(): mixed
+{
+    $args = func_get_args();
+    return match (count($args)) {
+        0 => VariableManager::getInstance(),
+        1 => VariableManager::getInstance()->get($args[0]),
+        2 => VariableManager::getInstance()->set($args[0], $args[1]),
+        3 => VariableManager::getInstance()->set($args[0], $args[1], $args[2]),
+        default => throw new InvalidArgumentException("Invalid number of arguments provided to _() function."),
+    };
+}
+
+
+interface Vehicle
+{
+    public function start(): void;
+    public function stop(): void;
+}
+
+interface Electrical
+{
+    public function charge(): void;
+}
+
+class Car implements Vehicle
+{
+    public function start(): void
+    {
+        echo "Car started\n";
+    }
+
+    public function stop(): void
+    {
+        echo "Car stopped\n";
+    }
+}
+
+class CellPhone implements Electrical
+{
+    public function charge(): void
+    {
+        echo "Cell phone charging\n";
+    }
+}
+
+class ElectricCar extends Car implements Electrical
+{
+    public function charge(): void
+    {
+        echo "Electric car charging\n";
+    }
+}
+
+interface Fruit
+{
+    public function eat(): void;
+}
+
+class Apple implements Fruit
+{
+    public function eat(): void
+    {
+        echo "Eating an apple\n";
+    }
+}
+
+_(
+    'a',
+    [
+        'teste' => [
+            0 => null,
+        ]
+    ],
+    'array<string, array<int, ?Fruit|(Vehicle&Electrical)>>'
+); // Create variable 'a' with value 123 and type 'int'
+var_dump(_('a'));
